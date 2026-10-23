@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="압축 회독">
+<title>실전 압축 회독</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+
+/* Layout: one study desk — a big clock band, a huge count with thumb-sized buttons, then pace cards comparing "me" vs "plan". */
+:root {
+  --paper: #eef2f5;
+  --sheet: #ffffff;
+  --ink: #17222e;
+  --muted: #5b6977;
+  --line: #d3dbe3;
+  --marker: #ffd23f;
+  --marker-ink: #17222e;
+  --good: #1f8a5b;
+  --bad: #d2432f;
+  --good-bg: #e2f4ea;
+  --bad-bg: #fbe6e2;
+  --f-display: "Black Han Sans", "IBM Plex Sans KR", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f151c; --sheet: #18212b; --ink: #e8edf2; --muted: #93a1af; --line: #2a3643;
+    --marker: #f2c53a; --marker-ink: #121a22; --good: #4cc98e; --bad: #ff7a66;
+    --good-bg: #16352a; --bad-bg: #3d1e1a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f151c; --sheet: #18212b; --ink: #e8edf2; --muted: #93a1af; --line: #2a3643;
+  --marker: #f2c53a; --marker-ink: #121a22; --good: #4cc98e; --bad: #ff7a66;
+  --good-bg: #16352a; --bad-bg: #3d1e1a; color-scheme: dark;
+}
+html, body { background: var(--paper); color: var(--ink); }
+body {
+  font-family: var(--f-body); font-size: 16px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(30px, 6vw, 44px); line-height: 1.1; margin: 0; letter-spacing: 0.01em; }
+h1 mark { background: linear-gradient(transparent 55%, var(--marker) 55%); color: inherit; padding: 0 2px; }
+.sub { color: var(--muted); font-size: 14px; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+label { display: block; font-size: 13px; color: var(--muted); letter-spacing: 0.04em; margin-bottom: 6px; }
+.setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; align-items: end; }
+.timein { display: flex; gap: 8px; align-items: center; }
+.timein span { color: var(--muted); }
+input[type=number] {
+  width: 100%; font-family: var(--f-num); font-size: 26px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink);
+}
+input:focus-visible, button:focus-visible { outline: 3px solid var(--marker); outline-offset: 2px; }
+button { font-family: var(--f-body); font-weight: 700; border: 0; border-radius: 12px; cursor: pointer; color: var(--ink); background: var(--paper); border: 1px solid var(--line); font-size: 16px; padding: 12px 18px; touch-action: manipulation; }
+button:active { transform: scale(0.98); }
+.primary { background: var(--ink); color: var(--sheet); border-color: var(--ink); font-size: 18px; padding: 16px; }
+.hint { color: var(--muted); font-size: 14px; margin: 12px 0 0; }
+
+/* running */
+.clock { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.clock .cell { display: flex; flex-direction: column; gap: 2px; }
+.clock .big { font-size: clamp(30px, 7vw, 52px); font-weight: 600; line-height: 1.1; }
+.bar { height: 8px; background: var(--paper); border-radius: 99px; overflow: hidden; margin-top: 14px; position: relative; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: 99px; }
+.bar b { position: absolute; top: -3px; bottom: -3px; width: 3px; background: var(--marker); border-radius: 2px; }
+.barlegend { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+.counter { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; }
+.count { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.count .n { font-family: var(--f-display); font-size: clamp(72px, 18vw, 128px); line-height: 0.95; }
+.count .of { font-family: var(--f-num); color: var(--muted); font-size: 22px; }
+.btns { display: flex; gap: 10px; align-items: stretch; }
+.plus { background: var(--marker); color: var(--marker-ink); border-color: var(--marker); font-family: var(--f-display); font-weight: 400; font-size: 26px; padding: 0 28px; min-height: 96px; min-width: 150px; border-radius: 16px; }
+.minus { font-size: 28px; min-width: 64px; border-radius: 16px; }
+.lap { margin-top: 14px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.lap .num { color: var(--ink); font-size: 16px; }
+.lap.over .num { color: var(--bad); }
+
+.status { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 17px; }
+.status.ahead { background: var(--good-bg); color: var(--good); }
+.status.behind { background: var(--bad-bg); color: var(--bad); }
+.status.even { background: var(--sheet); border: 1px solid var(--line); color: var(--ink); }
+.status .dot { width: 12px; height: 12px; border-radius: 50%; background: currentColor; flex: none; }
+
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.card .k { font-size: 13px; color: var(--muted); letter-spacing: 0.03em; }
+.card .v { font-family: var(--f-num); font-size: clamp(24px, 5vw, 34px); font-weight: 600; line-height: 1.15; }
+.card .v small { font-size: 0.5em; color: var(--muted); font-weight: 500; margin-left: 2px; }
+.card .d { font-size: 13px; color: var(--muted); }
+.card.me { border-color: var(--ink); }
+.v.good { color: var(--good); } .v.bad { color: var(--bad); }
+
+.ctl { display: flex; gap: 10px; flex-wrap: wrap; }
+.ctl button { flex: 1 1 120px; }
+.confirm { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--bad-bg); color: var(--bad); padding: 12px 14px; border-radius: 12px; font-weight: 700; }
+.confirm button { padding: 8px 14px; }
+.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+.paused-tag { font-size: 13px; background: var(--marker); color: var(--marker-ink); padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+
+@media (max-width: 560px) {
+  .counter { grid-template-columns: 1fr; }
+  .btns .plus { flex: 1; }
+  .clock .big { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { button:active { transform: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1><mark>실전 압축 회독</mark></h1>
+    <span class="sub" id="headSub">족보 하나에 쓸 시간을 지키는 페이스 타이머</span>
+  </header>
+
+  <!-- SETUP -->
+  <section id="setupView" class="sheet">
+    <div class="setup">
+      <div>
+        <label for="inCount">남은 족보 개수</label>
+        <input id="inCount" type="number" inputmode="numeric" min="1" value="40">
+      </div>
+      <div>
+        <label for="inH">남은 시간</label>
+        <div class="timein">
+          <input id="inH" type="number" inputmode="numeric" min="0" value="3" aria-label="시간"><span>시간</span>
+          <input id="inM" type="number" inputmode="numeric" min="0" max="59" value="0" aria-label="분"><span>분</span>
+        </div>
+      </div>
+      <button class="primary" id="startBtn">시작</button>
+    </div>
+    <p class="hint" id="previewHint"></p>
+  </section>
+
+  <!-- RUNNING -->
+  <div id="runView" hidden style="display:flex;flex-direction:column;gap:18px">
+    <section class="sheet">
+      <div class="clock">
+        <div class="cell"><label>경과</label><span class="big num" id="elapsed">0:00:00</span></div>
+        <div class="cell"><label>남은 시간 <span class="paused-tag" id="pausedTag" hidden>일시정지</span></label><span class="big num" id="remain">0:00:00</span></div>
+      </div>
+      <div class="bar" aria-hidden="true"><i id="barDone"></i><b id="barIdeal"></b></div>
+      <div class="barlegend"><span>검정 = 내가 본 족보 비율</span><span>노란 선 = 시간 비율</span></div>
+    </section>
+
+    <section class="sheet">
+      <div class="counter">
+        <div>
+          <label>읽은 족보</label>
+          <div class="count"><span class="n num" id="done" style="font-family:var(--f-display)">0</span><span class="of" id="of">/ 40</span></div>
+        </div>
+        <div class="btns">
+          <button class="minus" id="minusBtn" aria-label="한 개 빼기">−</button>
+          <button class="plus" id="plusBtn">+1 다 읽음</button>
+        </div>
+      </div>
+      <div class="lap" id="lapRow"><span>지금 족보 <span class="num" id="lap">0:00</span></span><span>목표 <span class="num" id="lapTarget">4:30</span> 이내</span></div>
+    </section>
+
+    <div class="status even" id="status"><span class="dot"></span><span id="statusText">시작했어요</span></div>
+
+    <div class="cards">
+      <div class="card me">
+        <span class="k">지금 내 속도</span>
+        <span class="v" id="myPace">–</span>
+        <span class="d">족보 1개당 평균</span>
+      </div>
+      <div class="card">
+        <span class="k">이상적인 족보당 시간</span>
+        <span class="v" id="idealPace">–</span>
+        <span class="d">처음 계획 (전체 시간 ÷ 전체 개수)</span>
+      </div>
+      <div class="card">
+        <span class="k">지금쯤 봤어야 할 개수</span>
+        <span class="v" id="idealDone">–</span>
+        <span class="d" id="idealDoneD">계획 속도 기준</span>
+      </div>
+      <div class="card">
+        <span class="k">남은 걸 끝내려면</span>
+        <span class="v" id="needPace">–</span>
+        <span class="d" id="needPaceD">족보 1개당 이 안에</span>
+      </div>
+    </div>
+
+    <div class="ctl">
+      <button id="pauseBtn">일시정지</button>
+      <button id="resetBtn">처음부터 다시</button>
+    </div>
+    <div class="confirm" id="confirmBox" hidden>
+      <span>기록을 지우고 처음 화면으로 갈까요?</span>
+      <button class="danger" id="confirmYes">지우기</button>
+      <button id="confirmNo">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'jokbo-pace-v1';
+  let S = null; // {total, durMs, start, done, pausedAt, pausedMs, lastAt}
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function load() { try { const v = localStorage.getItem(KEY); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function clear() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+  function hms(ms) {
+    ms = Math.max(0, ms); const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0');
+  }
+  function ms2(ms) {
+    ms = Math.max(0, ms); const s = Math.round(ms / 1000);
+    const m = Math.floor(s / 60), x = s % 60;
+    return m + ':' + String(x).padStart(2, '0');
+  }
+  function paceHTML(ms) {
+    if (!isFinite(ms) || ms <= 0) return '–';
+    const s = Math.round(ms / 1000), m = Math.floor(s / 60), x = s % 60;
+    return m + '<small>분</small> ' + String(x).padStart(2, '0') + '<small>초</small>';
+  }
+  function now() { return Date.now(); }
+  function elapsedMs() {
+    const end = S.pausedAt || now();
+    return Math.max(0, end - S.start - S.pausedMs);
+  }
+
+  // setup preview
+  function readInputs() {
+    const n = parseInt($('inCount').value, 10);
+    const h = parseInt($('inH').value, 10) || 0;
+    const m = parseInt($('inM').value, 10) || 0;
+    return { n, dur: (h * 60 + m) * 60000 };
+  }
+  function preview() {
+    const { n, dur } = readInputs();
+    $('previewHint').textContent = (n > 0 && dur > 0)
+      ? '족보 1개당 ' + ms2(dur / n) + ' 안에 읽어야 해요.'
+      : '남은 족보 개수와 시간을 입력하세요.';
+  }
+  ['inCount', 'inH', 'inM'].forEach((id) => $(id).addEventListener('input', preview));
+
+  $('startBtn').addEventListener('click', () => {
+    const { n, dur } = readInputs();
+    if (!(n > 0) || !(dur > 0)) { $('previewHint').textContent = '개수는 1개 이상, 시간은 1분 이상으로 입력하세요.'; return; }
+    const t = now();
+    S = { total: n, durMs: dur, start: t, done: 0, pausedAt: null, pausedMs: 0, lastAt: 0 };
+    save(); show();
+  });
+
+  // wake lock (keeps iPad screen on while visible)
+  let lock = null;
+  async function wake() {
+    try { if ('wakeLock' in navigator && !lock) { lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => { lock = null; }); } } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S) wake(); });
+
+  function show() {
+    $('setupView').hidden = true;
+    $('runView').hidden = false;
+    $('headSub').textContent = '족보 ' + S.total + '개 · ' + hms(S.durMs).replace(/:\d\d$/, '') + ' 계획';
+    wake(); tick();
+  }
+  function showSetup() {
+    $('runView').hidden = true; $('setupView').hidden = false;
+    $('headSub').textContent = '족보 하나에 쓸 시간을 지키는 페이스 타이머';
+    $('confirmBox').hidden = true; preview();
+  }
+
+  $('plusBtn').addEventListener('click', () => {
+    if (!S || S.done >= S.total) return;
+    S.done++; S.lastAt = elapsedMs(); save(); tick();
+  });
+  $('minusBtn').addEventListener('click', () => {
+    if (!S || S.done <= 0) return;
+    S.done--; if (S.done === 0) S.lastAt = 0; save(); tick();
+  });
+  $('pauseBtn').addEventListener('click', () => {
+    if (!S) return;
+    if (S.pausedAt) { S.pausedMs += now() - S.pausedAt; S.pausedAt = null; }
+    else { S.pausedAt = now(); }
+    save(); tick();
+  });
+  $('resetBtn').addEventListener('click', () => { $('confirmBox').hidden = false; });
+  $('confirmNo').addEventListener('click', () => { $('confirmBox').hidden = true; });
+  $('confirmYes').addEventListener('click', () => {
+    if (S) { $('inCount').value = Math.max(1, S.total - S.done); }
+    S = null; clear(); showSetup();
+  });
+
+  function tick() {
+    if (!S) return;
+    const e = elapsedMs();
+    const rem = S.durMs - e;
+    const idealPer = S.durMs / S.total;
+    const idealDone = Math.min(S.total, e / idealPer);
+    const left = S.total - S.done;
+
+    $('elapsed').textContent = hms(e);
+    $('remain').textContent = rem >= 0 ? hms(rem) : '-' + hms(-rem);
+    $('pausedTag').hidden = !S.pausedAt;
+    $('pauseBtn').textContent = S.pausedAt ? '다시 시작' : '일시정지';
+
+    $('done').textContent = S.done;
+    $('of').textContent = '/ ' + S.total;
+    $('barDone').style.width = (S.done / S.total * 100) + '%';
+    $('barIdeal').style.left = 'calc(' + Math.min(100, e / S.durMs * 100) + '% - 1px)';
+
+    // current lap
+    const lap = e - (S.lastAt || 0);
+    const need = left > 0 && rem > 0 ? rem / left : 0;
+    $('lap').textContent = ms2(lap);
+    $('lapTarget').textContent = left > 0 ? (need > 0 ? ms2(need) : '0:00') : '–';
+    $('lapRow').classList.toggle('over', left > 0 && lap > need);
+
+    // cards
+    const my = S.done > 0 ? e / S.done : NaN;
+    $('myPace').innerHTML = paceHTML(my);
+    $('myPace').className = 'v' + (S.done > 0 ? (my <= idealPer ? ' good' : ' bad') : '');
+    $('idealPace').innerHTML = paceHTML(idealPer);
+    $('idealDone').innerHTML = idealDone.toFixed(1) + '<small>개</small>';
+    $('idealDoneD').textContent = '나는 ' + S.done + '개 · 계획 속도 기준';
+    if (left === 0) {
+      $('needPace').innerHTML = '완료';
+      $('needPaceD').textContent = '모든 족보를 읽었어요';
+    } else if (rem <= 0) {
+      $('needPace').innerHTML = '시간 초과';
+      $('needPaceD').textContent = left + '개 남음';
+    } else {
+      $('needPace').innerHTML = paceHTML(need);
+      $('needPaceD').textContent = '남은 ' + left + '개를 1개당 이 안에';
+    }
+    $('needPace').className = 'v' + (left > 0 ? (need >= idealPer ? ' good' : ' bad') : ' good');
+
+    // status
+    const diff = S.done - idealDone;
+    const st = $('status');
+    if (left === 0) {
+      st.className = 'status ahead'; $('statusText').textContent = '전부 끝! ' + (rem > 0 ? hms(rem) + ' 남기고 완료했어요.' : '');
+    } else if (S.done === 0 && e < idealPer) {
+      st.className = 'status even'; $('statusText').textContent = '첫 족보 읽는 중. ' + ms2(idealPer) + ' 안에 넘기세요.';
+    } else if (diff >= 0.5) {
+      st.className = 'status ahead'; $('statusText').textContent = '계획보다 ' + diff.toFixed(1) + '개 앞서고 있어요';
+    } else if (diff <= -0.5) {
+      st.className = 'status behind'; $('statusText').textContent = '계획보다 ' + (-diff).toFixed(1) + '개 밀렸어요. 속도 올리세요';
+    } else {
+      st.className = 'status even'; $('statusText').textContent = '계획대로 가고 있어요';
+    }
+  }
+
+  setInterval(tick, 500);
+  S = load();
+  if (S && S.total) show(); else { S = null; preview(); }
+})();
+</script>
+
+</body>
+</html>
