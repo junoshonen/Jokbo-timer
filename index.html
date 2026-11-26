@@ -518,7 +518,7 @@ button:active { transform: scale(0.98); }
     st.className = 'status ' + tone + (on ? ' with-buddy' : '');
     st.hidden = !on && !S;
     $('buddy').hidden = !on; $('buddyWho').hidden = !on; $('buddySay').hidden = !on;
-    $('statusText').hidden = !fact;
+    $('statusText').hidden = !fact || on; // 캐릭터가 켜져 있으면 대사만 (11/26 준호님)
     $('statusText').textContent = fact;
     if (on) {
       setBuddy(mood);
