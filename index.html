@@ -357,7 +357,8 @@ button:active { transform: scale(0.98); }
   $('plusBtn').addEventListener('click', () => {
     if (!S || S.done >= S.total) return;
     const at = elapsedMs(), rem0 = S.durMs - at + (at - (S.lastAt || 0)), left0 = S.total - S.done;
-    (S.laps = S.laps || []).push({ t: at - (S.lastAt || 0), at, goal: left0 > 0 && rem0 > 0 ? rem0 / left0 : 0 });
+    const g0 = left0 > 0 && rem0 > 0 ? rem0 / left0 : 0, g1 = (S.done + 1) * (S.durMs / S.total) - (S.lastAt || 0);
+    (S.laps = S.laps || []).push({ t: at - (S.lastAt || 0), at, goal: left0 > 0 ? Math.max(g0, g1) : 0 });
     S.done++; S.lastAt = at; save(); renderLaps();
     plusUntil = now() + 1800; curMood = null; tick();
   });
@@ -417,7 +418,9 @@ button:active { transform: scale(0.98); }
 
     // current lap
     const lap = e - (S.lastAt || 0);
-    const need = left > 0 && rem > 0 ? rem / left : 0;
+    const need0 = left > 0 && rem > 0 ? rem / left : 0;
+    // 이 족보 목표 = 전체로 봐서 밀리기 전까지 남은 시간 (앞서 번 시간 포함) — 11/26 준호님
+    const need = left > 0 ? Math.max(need0, (S.done + 1) * idealPer - (S.lastAt || 0)) : 0;
     $('lap').textContent = ms2(lap);
     $('lapTarget').textContent = left > 0 ? (need > 0 ? ms2(need) : '0:00') : '–';
     $('lapRow').classList.toggle('over', left > 0 && lap > need);
@@ -436,10 +439,10 @@ button:active { transform: scale(0.98); }
       $('needPace').innerHTML = '시간 초과';
       $('needPaceD').textContent = left + '개 남음';
     } else {
-      $('needPace').innerHTML = paceHTML(need);
+      $('needPace').innerHTML = paceHTML(need0);
       $('needPaceD').textContent = '남은 ' + left + '개를 1개당 이 안에';
     }
-    $('needPace').className = 'v' + (left > 0 ? (need >= idealPer ? ' good' : ' bad') : ' good');
+    $('needPace').className = 'v' + (left > 0 ? (need0 >= idealPer ? ' good' : ' bad') : ' good');
 
     // status
     // 읽는 중인 족보는 아직 기록 전 — 다음 족보 목표 시점((읽은 수+1)×족보당 시간)을 넘겨야 '밀림',
