@@ -90,6 +90,14 @@ button:active { transform: scale(0.98); }
 .btns { display: flex; gap: 10px; align-items: stretch; }
 .plus { background: var(--marker); color: var(--marker-ink); border-color: var(--marker); font-family: var(--f-display); font-weight: 400; font-size: 26px; padding: 0 28px; min-height: 96px; min-width: 150px; border-radius: 16px; }
 .minus { font-size: 28px; min-width: 64px; border-radius: 16px; }
+.laps { margin-top: 14px; border-top: 1px solid var(--line); max-height: 260px; overflow-y: auto; }
+.laps:empty { display: none; }
+.laps .row { display: grid; grid-template-columns: 3.2em 1fr 1fr 1fr; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--line); font-size: 14px; align-items: baseline; }
+.laps .row.head { color: var(--muted); font-size: 12px; position: sticky; top: 0; background: var(--sheet); }
+.laps .row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.laps .row .t.good { color: var(--good); } .laps .row .t.bad { color: var(--bad); }
+.laps .row.best .t::after { content: ' 최고'; font-size: 11px; color: var(--good); }
+.laps .row.worst .t::after { content: ' 최저'; font-size: 11px; color: var(--bad); }
 .lap { margin-top: 14px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
 .lap .num { color: var(--ink); font-size: 16px; }
 .lap.over .num { color: var(--bad); }
@@ -233,6 +241,7 @@ button:active { transform: scale(0.98); }
         </div>
       </div>
       <div class="lap" id="lapRow"><span>지금 족보 <span class="num" id="lap">0:00</span></span><span>목표 <span class="num" id="lapTarget">4:30</span> 이내</span></div>
+      <div class="laps" id="laps"></div>
     </section>
 
 
@@ -336,7 +345,7 @@ button:active { transform: scale(0.98); }
     $('setupView').hidden = true;
     $('runView').hidden = false;
     $('headSub').textContent = '족보 ' + S.total + '개 · ' + hms(S.durMs).replace(/:\d\d$/, '') + ' 계획';
-    wake(); tick();
+    wake(); renderLaps(); tick();
   }
   function showSetup() {
     $('runView').hidden = true; $('setupView').hidden = false;
@@ -346,12 +355,16 @@ button:active { transform: scale(0.98); }
 
   $('plusBtn').addEventListener('click', () => {
     if (!S || S.done >= S.total) return;
-    S.done++; S.lastAt = elapsedMs(); save();
+    const at = elapsedMs(), rem0 = S.durMs - at + (at - (S.lastAt || 0)), left0 = S.total - S.done;
+    (S.laps = S.laps || []).push({ t: at - (S.lastAt || 0), at, goal: left0 > 0 && rem0 > 0 ? rem0 / left0 : 0 });
+    S.done++; S.lastAt = at; save(); renderLaps();
     plusUntil = now() + 1800; curMood = null; tick();
   });
   $('minusBtn').addEventListener('click', () => {
     if (!S || S.done <= 0) return;
-    S.done--; if (S.done === 0) S.lastAt = 0; save(); tick();
+    S.done--; if (S.laps && S.laps.length) S.laps.pop();
+    S.lastAt = S.done === 0 ? 0 : (S.laps && S.laps.length ? S.laps[S.laps.length - 1].at : S.lastAt);
+    save(); renderLaps(); tick();
   });
   $('pauseBtn').addEventListener('click', () => {
     if (!S) return;
@@ -365,6 +378,23 @@ button:active { transform: scale(0.98); }
     if (S) { $('inCount').value = Math.max(1, S.total - S.done); }
     S = null; clear(); showSetup();
   });
+
+  // 스톱워치처럼 족보마다 걸린 시간(랩) 기록 — 최근 것이 위
+  function renderLaps() {
+    const box = $('laps'); if (!box) return;
+    const L = (S && S.laps) || [];
+    if (!L.length) { box.innerHTML = ''; return; }
+    let best = 0, worst = 0;
+    L.forEach((l, i) => { if (l.t < L[best].t) best = i; if (l.t > L[worst].t) worst = i; });
+    let h = '<div class="row head"><span>족보</span><span>걸린 시간</span><span>그때 목표</span><span>누적</span></div>';
+    for (let i = L.length - 1; i >= 0; i--) {
+      const l = L[i], cls = l.goal ? (l.t <= l.goal ? 'good' : 'bad') : '';
+      const tag = L.length > 1 ? (i === best ? ' best' : i === worst ? ' worst' : '') : '';
+      h += '<div class="row' + tag + '"><span>' + (i + 1) + '</span><span class="t num ' + cls + '">' + ms2(l.t) +
+        '</span><span class="num">' + (l.goal ? ms2(l.goal) : '–') + '</span><span class="num">' + hms(l.at) + '</span></div>';
+    }
+    box.innerHTML = h;
+  }
 
   function tick() {
     if (!S) return;
