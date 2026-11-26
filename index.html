@@ -305,6 +305,7 @@ button:active { transform: scale(0.98); }
     const s = Math.round(ms / 1000), m = Math.floor(s / 60), x = s % 60;
     return m + '<small>분</small> ' + String(x).padStart(2, '0') + '<small>초</small>';
   }
+  function kmin(ms) { const t = Math.round(ms / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), x = t % 60; return (h ? h + '시간 ' : '') + (h || m ? m + '분' : x + '초'); }
   function now() { return Date.now(); }
   function elapsedMs() {
     const end = S.pausedAt || now();
@@ -442,15 +443,16 @@ button:active { transform: scale(0.98); }
 
     // status
     const diff = S.done - idealDone;
+    const diffMs = diff * idealPer; // 앞선(+)·밀린(−) 시간 — 30초 넘으면 '계획대로'가 아니라 앞섬/밀림으로 (11/26 준호님)
     let tone, fact;
     if (left === 0) {
       tone = 'ahead'; fact = '전부 끝! ' + (rem > 0 ? hms(rem) + ' 남기고 완료했어요.' : '');
     } else if (S.done === 0 && e < idealPer) {
       tone = 'even'; fact = '첫 족보 읽는 중. ' + ms2(idealPer) + ' 안에 넘기세요.';
-    } else if (diff >= 0.5) {
-      tone = 'ahead'; fact = '계획보다 ' + diff.toFixed(1) + '개 앞서고 있어요';
-    } else if (diff <= -0.5) {
-      tone = 'behind'; fact = '계획보다 ' + (-diff).toFixed(1) + '개 밀렸어요. 속도 올리세요';
+    } else if (diffMs >= 30000) {
+      tone = 'ahead'; fact = '계획보다 ' + diff.toFixed(1) + '개(' + kmin(diffMs) + ') 앞서고 있어요';
+    } else if (diffMs <= -30000) {
+      tone = 'behind'; fact = '계획보다 ' + (-diff).toFixed(1) + '개(' + kmin(-diffMs) + ') 밀렸어요. 속도 올리세요';
     } else {
       tone = 'even'; fact = '계획대로 가고 있어요';
     }
@@ -462,9 +464,9 @@ button:active { transform: scale(0.98); }
     else if (S.pausedAt) mood = 'pause';
     else if (now() < plusUntil) mood = 'plus';
     else if (diff <= -2) mood = 'panic';
-    else if (diff <= -0.5) mood = 'behind';
+    else if (diffMs <= -30000) mood = 'behind';
     else if (lap > need) mood = 'overlap';
-    else if (diff >= 0.5) mood = 'ahead';
+    else if (diffMs >= 30000) mood = 'ahead';
     else mood = 'focus';
     if (mood === 'timeout' || mood === 'panic' || mood === 'overlap') tone = 'behind';
     renderStatus(tone, fact, mood, { d: Math.abs(diff).toFixed(1), t: ms2(need), n: left });
