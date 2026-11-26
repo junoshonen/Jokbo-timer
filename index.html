@@ -469,7 +469,8 @@ button:active { transform: scale(0.98); }
     else if (diffMs >= 30000) mood = 'ahead';
     else mood = 'focus';
     if (mood === 'timeout' || mood === 'panic' || mood === 'overlap') tone = 'behind';
-    renderStatus(tone, fact, mood, { d: Math.abs(diff).toFixed(1), t: ms2(need), n: left });
+    renderStatus(tone, fact, mood, { d: Math.abs(diff).toFixed(1), m: kmin(Math.abs(diffMs)), t: ms2(need), n: left, l: ms2(lap), r: hms(Math.max(0, rem)),
+      s: diffMs >= 30000 ? Math.abs(diff).toFixed(1) + '개(' + kmin(diffMs) + ') 앞섰어' : diffMs <= -30000 ? Math.abs(diff).toFixed(1) + '개(' + kmin(-diffMs) + ') 밀렸어' : '계획대로야' });
   }
 
   // ---------- character ----------
@@ -479,15 +480,15 @@ button:active { transform: scale(0.98); }
   };
   const LINES = {
     ready: ['오늘도 압축 회독 가보자!', '족보 다 씹어먹자!', '준비됐지? 시작 눌러!'],
-    focus: ['좋아, 이 페이스 그대로!', '계획대로 가는 중이야', '집중 잘하고 있어'],
-    ahead: ['오 빠른데? 최고야!', '{d}개나 앞섰어! 멋져', '이 기세면 여유 있게 끝나겠다'],
-    behind: ['조금만 더 빨리!', '{d}개 밀렸어, 따라잡자', '하나에 너무 오래 머물지 마'],
-    panic: ['큰일이야! {d}개나 밀렸어!', '지금 속도 확 올려야 해!', '디테일은 버리고 넘기자!'],
-    overlap: ['이거 너무 오래 보는 거 아냐?', '목표 {t} 넘었어, 넘기자!', '이 족보는 여기까지!'],
-    done: ['다 끝냈다! 진짜 고생했어!', '완주! 시험도 이렇게 가자!'],
-    plus: ['하나 끝! 잘했어', '좋아, 다음 거!', '나이스!'],
-    pause: ['잠깐 쉬어가자. 금방 돌아와!', '물 한 잔 마시고 와'],
-    timeout: ['아직 안 끝났어, 끝까지!', '{n}개 남았어, 마무리하자!']
+    focus: ['계획대로 가는 중! 이 페이스 그대로', '딱 계획대로야, 이번 족보도 {t} 안에!', '계획대로! 남은 {n}개 이 속도로 가자'],
+    ahead: ['{d}개({m}) 앞섰어! 최고야', '계획보다 {m} 빨라! 멋져', '{d}개 앞서는 중! 이대로만 가자'],
+    behind: ['{d}개({m}) 밀렸어, 따라잡자!', '계획보다 {m} 늦어, 조금만 빨리!', '{d}개 밀렸어, 하나에 {t} 안으로!'],
+    panic: ['큰일이야! {d}개({m})나 밀렸어!', '{m}이나 밀렸어, 속도 확 올려!', '{d}개 밀렸어, 디테일은 버리고 넘기자!'],
+    overlap: ['이 족보 {l}째야, 목표 {t} 넘었어!', '목표 {t} 지났어, 넘기자!', '{l}째 보는 중! 이 족보는 여기까지'],
+    done: ['다 끝냈다! {r} 남기고 완주!', '완주! 진짜 고생했어!'],
+    plus: ['하나 끝! {s}', '좋아, 다음 거! {s}', '나이스! {s}'],
+    pause: ['잠깐 쉬자! 지금 {s}', '물 한 잔 마시고 와. 지금 {s}'],
+    timeout: ['시간은 끝났지만 {n}개 남았어, 마무리하자!', '{n}개 남았어, 끝까지!']
   };
   const SKEY = 'jokbo-pace-settings';
   let cfg = { on: true, ch: 'monkey' };
